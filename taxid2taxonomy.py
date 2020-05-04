@@ -73,7 +73,8 @@ def process_all_taxids(query_file, ranks=None):
 def guess_header(filename, sep):
     first_line = next(open(filename)).split(',')
 
-    return not any(x.replace('.', '').isdigit() for x in first_line)
+    if not any(x.replace('.', '').isdigit() for x in first_line):
+        return 0
     
 def main():
     '''
