@@ -48,22 +48,33 @@ def taxid2lineage(db, acc, taxid, ranks=None):
     return names
 
 def process_all_taxids(query_file, ranks=None):
-    data = pd.read_csv(query_file, dtype=str, header=None).dropna()
+    data = pd.read_csv(query_file, dtype=str, header=guess_header(query_file, sep=',')).dropna()
     ncbi = NCBITaxa()
 
     lineages = []
+    processed = {}
 
     for i, (acc, taxid, _) in enumerate(data.to_numpy()):
         print("{:.1%}".format(i/len(data)), end='\r')
 
+        if taxid in processed:
+            lineages.append(processed[taxid])
+            continue
+        
         names = taxid2lineage(ncbi, acc, taxid, ranks=ranks)
-
         if names is not None:
             lineages.append(names)
 
+        processed[taxid] = names
+        
     lineage_df = pd.concat(lineages, axis=1).T
     lineage_df.dropna(how='all').drop_duplicates().to_csv('lineages.csv')
 
+def guess_header(filename, sep):
+    first_line = next(open(filename)).split(',')
+
+    return not any(x.replace('.', '').isdigit() for x in first_line)
+    
 def main():
     '''
     '''
