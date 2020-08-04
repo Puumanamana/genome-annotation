@@ -1,5 +1,5 @@
 [package]
-name = "genome_annotation"
+name = "acc2taxid"
 version = "0.1.0"
 authors = ["Cedric Arisdakessian <carisdak@hawaii.edu>"]
 edition = "2018"
