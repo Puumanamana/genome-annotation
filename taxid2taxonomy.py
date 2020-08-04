@@ -8,6 +8,8 @@ import argparse
 SRC_DIR = Path(__file__).parent
 RUST_APP = '{}/genome_annotation/target/release/genome_annotation'.format(SRC_DIR)
 
+RANKS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+
 def parse_args():
     '''
     '''
@@ -15,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--taxids', type=str, default="taxids.csv")
     parser.add_argument('--accessions', type=str, default=None)
-    parser.add_argument('--ranks', type=str, nargs='*')
+    parser.add_argument('--ranks', type=str, nargs='*', default=RANKS)
     args = parser.parse_args()
 
     if args.accessions is not None:
@@ -40,7 +42,7 @@ def taxid2lineage(db, acc, taxid, ranks=None):
         return
     names = pd.Series(db.get_taxid_translator(lineage)).rename(acc)
     names.index = pd.Series(db.get_rank(names.index)).values
-    names.drop('no rank', inplace=True)
+    names = names[~names.index.duplicated()].drop('no rank', errors='ignore')
 
     if ranks:
         names = names.reindex(ranks)
@@ -67,8 +69,12 @@ def process_all_taxids(query_file, ranks=None):
 
         processed[taxid] = names
         
-    lineage_df = pd.concat(lineages, axis=1).T
-    lineage_df.dropna(how='all').drop_duplicates().to_csv('lineages.csv')
+    lineage_df = (pd.concat(lineages, axis=1).T
+                  .dropna(how='all')
+                  .drop_duplicates()
+                  .rename(columns={'superkingdom': 'kingdom'}))
+                  
+    lineage_df.to_csv('lineages.csv')
 
 def guess_header(filename, sep):
     first_line = next(open(filename)).split(',')
